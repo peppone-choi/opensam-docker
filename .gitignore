@@ -3,6 +3,12 @@
 .env.local
 .env.*.local
 
+# Dev mode files (development only)
+docker-compose.dev.yml
+Dockerfile.dev
+start-dev.sh
+*.dev.yml
+
 # Backup files
 .env.backup
 backups/
