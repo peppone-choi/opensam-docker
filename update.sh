@@ -94,3 +94,5 @@ echo "  🌐 프론트엔드: http://localhost:${FRONTEND_PORT:-3000}"
 echo "  🔧 백엔드 API: http://localhost:${BACKEND_PORT:-8080}"
 echo ""
 
+
+

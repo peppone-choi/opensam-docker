@@ -101,3 +101,5 @@ echo "  1. 프론트엔드 접속: http://localhost:${FRONTEND_PORT:-3000}"
 echo "  2. 회원가입 후 게임 시작"
 echo ""
 
+
+
