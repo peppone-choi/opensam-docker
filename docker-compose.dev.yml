@@ -3,17 +3,13 @@ version: '3.8'
 # ==========================================
 # OpenSAM Development Docker Compose
 # ==========================================
-#
-# 개발 환경용 설정
-# - 소스 코드 마운트 (핫 리로드)
-# - 상세 로깅
-# - 디버그 포트 노출
-#
-# 실행: docker-compose -f docker-compose.dev.yml up
+# 
+# 개발용 - 소스 마운트 + 핫 리로드
+# 실행: docker-compose -f docker-compose.dev.yml up -d
 # ==========================================
 
 networks:
-  opensam-dev:
+  opensam:
     driver: bridge
 
 volumes:
@@ -23,10 +19,6 @@ volumes:
     driver: local
 
 services:
-  # ==========================================
-  # Infrastructure Services
-  # ==========================================
-
   mongodb:
     image: mongo:7
     container_name: opensam-mongodb-dev
@@ -34,18 +26,20 @@ services:
       - "${MONGO_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-devpassword}
-      MONGO_INITDB_DATABASE: ${MONGO_DB:-sangokushi_dev}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-sangokushi}
     volumes:
       - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
     networks:
-      - opensam-dev
+      - opensam
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -53,25 +47,25 @@ services:
     command: >
       redis-server
       --appendonly yes
-      --maxmemory 2gb
+      --maxmemory ${REDIS_MAXMEMORY:-2gb}
       --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-changeme}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     networks:
-      - opensam-dev
+      - opensam
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   # ==========================================
-  # Application Services (Development Mode)
+  # 개발용 Backend API (핫 리로드)
   # ==========================================
-
   backend:
     build:
       context: ./open-sam-backend
@@ -79,79 +73,66 @@ services:
     container_name: opensam-backend-dev
     ports:
       - "${BACKEND_PORT:-8080}:8080"
-      - "9229:9229"  # Node.js 디버그 포트
     environment:
       NODE_ENV: development
       PORT: 8080
-      DEBUG: opensam:*
-      
-      # Database
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-sangokushi_dev}?authSource=admin
-      
-      # Redis (개발 환경에서는 비밀번호 없음)
-      REDIS_URL: redis://redis:6379/0
-      REDIS_KEY_PREFIX: "dev:"
-      
-      # Session
-      SESSION_ID: ${SESSION_ID:-dev_session}
-      SERVER_ID: ${SERVER_ID:-opensam_dev}
-      SERVER_NAME: ${SERVER_NAME:-OpenSAM Dev}
-      
-      # Security
-      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret}
+      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
+      SESSION_ID: ${SESSION_ID:-default}
+      SERVER_ID: ${SERVER_ID:-opensam_default}
+      SERVER_NAME: ${SERVER_NAME:-OpenSAM}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret}
-      
-      # Frontend
-      FRONTEND_URL: http://localhost:3000
-      CORS_ORIGIN: http://localhost:3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     volumes:
-      - ./open-sam-backend:/app
-      - /app/node_modules
-      - /app/dist
+      - ./open-sam-backend/src:/app/src:delegated
+      - ./open-sam-backend/package.json:/app/package.json:ro
+      - ./open-sam-backend/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - opensam-dev
+      - opensam
     restart: unless-stopped
+    command: ["npm", "run", "dev"]
 
+  # ==========================================
+  # 개발용 Daemon (핫 리로드)
+  # ==========================================
   daemon:
     build:
       context: ./open-sam-backend
       dockerfile: Dockerfile.dev
     container_name: opensam-daemon-dev
-    command: npm run dev:daemon
     environment:
       NODE_ENV: development
-      DEBUG: opensam:*
-      
-      # Database
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-devpassword}@mongodb:27017/${MONGO_DB:-sangokushi_dev}?authSource=admin
-      
-      # Redis
-      REDIS_URL: redis://redis:6379/0
-      REDIS_KEY_PREFIX: "dev:"
-      
-      # Session
-      SESSION_ID: ${SESSION_ID:-dev_session}
-      
-      # Daemon 설정
+      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
+      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
+      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
+      SESSION_ID: ${SESSION_ID:-default}
       TURN_INTERVAL: ${TURN_INTERVAL:-10000}
       DB_SYNC_INTERVAL: ${DB_SYNC_INTERVAL:-5000}
     volumes:
-      - ./open-sam-backend:/app
-      - /app/node_modules
+      - ./open-sam-backend/src:/app/src:delegated
+      - ./open-sam-backend/package.json:/app/package.json:ro
+      - ./open-sam-backend/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
     networks:
-      - opensam-dev
+      - opensam
     restart: unless-stopped
+    command: ["npm", "run", "dev:turn"]
 
+  # ==========================================
+  # 개발용 Frontend (핫 리로드)
+  # ==========================================
   frontend:
     build:
       context: ./open-sam-front
@@ -161,18 +142,17 @@ services:
       - "${FRONTEND_PORT:-3000}:3000"
     environment:
       NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:8080
+      # 클라이언트 브라우저용 (외부 접근)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      # 서버사이드 프록시용 (Docker 내부 네트워크)
       BACKEND_URL: http://backend:8080
-      NEXT_PUBLIC_SESSION_ID: ${SESSION_ID:-dev_session}
-      WATCHPACK_POLLING: "true"
+      NEXT_PUBLIC_SESSION_ID: ${SESSION_ID:-default}
     volumes:
-      - ./open-sam-front:/app
-      - /app/node_modules
-      - /app/.next
+      - ./open-sam-front/src:/app/src:delegated
+      - ./open-sam-front/public:/app/public:delegated
     depends_on:
       - backend
     networks:
-      - opensam-dev
-
-
-
+      - opensam
+    restart: unless-stopped
+    command: ["npm", "run", "dev"]
