@@ -88,6 +88,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     volumes:
       - ./open-sam-backend/src:/app/src:delegated
+      - ./open-sam-backend/config:/app/config:ro
       - ./open-sam-backend/package.json:/app/package.json:ro
       - ./open-sam-backend/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
@@ -118,6 +119,7 @@ services:
       DB_SYNC_INTERVAL: ${DB_SYNC_INTERVAL:-5000}
     volumes:
       - ./open-sam-backend/src:/app/src:delegated
+      - ./open-sam-backend/config:/app/config:ro
       - ./open-sam-backend/package.json:/app/package.json:ro
       - ./open-sam-backend/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
