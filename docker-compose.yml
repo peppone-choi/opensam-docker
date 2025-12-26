@@ -87,29 +87,13 @@ services:
     container_name: opensam-backend
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
-      PORT: 8080
-      
-      # Database
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
-      
-      # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
-      
-      # Session
-      SESSION_ID: ${SESSION_ID:-default}
-      SERVER_ID: ${SERVER_ID:-opensam_default}
-      SERVER_NAME: ${SERVER_NAME:-OpenSAM}
-      
-      # Security
-      JWT_SECRET: ${JWT_SECRET:-change_this_in_production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_this_refresh_secret}
-      
-      # Frontend
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      - NODE_ENV=production
+      # Docker 내부 네트워크용 주소 명시적 오버라이드
+      - MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
     depends_on:
       mongodb:
         condition: service_healthy
@@ -132,22 +116,12 @@ services:
       dockerfile: Dockerfile
     container_name: opensam-daemon
     command: ["npm", "run", "start:daemon"]
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
-      
-      # Database
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
-      
-      # Redis
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
-      
-      # Session
-      SESSION_ID: ${SESSION_ID:-default}
-      
-      # Daemon 설정
-      TURN_INTERVAL: ${TURN_INTERVAL:-10000}
-      DB_SYNC_INTERVAL: ${DB_SYNC_INTERVAL:-5000}
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
     depends_on:
       mongodb:
         condition: service_healthy
@@ -169,10 +143,11 @@ services:
     container_name: opensam-frontend
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-      NEXT_PUBLIC_SESSION_ID: ${SESSION_ID:-default}
+      - NODE_ENV=production
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
     networks:
@@ -184,6 +159,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+
+
+
+
+
+
+
+
+
+
 
 
 

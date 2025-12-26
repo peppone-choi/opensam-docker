@@ -73,19 +73,10 @@ services:
     container_name: opensam-backend-dev
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
-      PORT: 8080
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
-      SESSION_ID: ${SESSION_ID:-default}
-      SERVER_ID: ${SERVER_ID:-opensam_default}
-      SERVER_NAME: ${SERVER_NAME:-OpenSAM}
-      JWT_SECRET: ${JWT_SECRET:-dev_secret}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev_refresh_secret}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      - NODE_ENV=development
     volumes:
       - ./open-sam-backend/src:/app/src:delegated
       - ./open-sam-backend/config:/app/config:ro
@@ -109,14 +100,10 @@ services:
       context: ./open-sam-backend
       dockerfile: Dockerfile.dev
     container_name: opensam-daemon-dev
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
-      MONGODB_URI: mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-changeme}@mongodb:27017/${MONGO_DB:-sangokushi}?authSource=admin
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379/0
-      REDIS_KEY_PREFIX: "${SESSION_ID:-default}:"
-      SESSION_ID: ${SESSION_ID:-default}
-      TURN_INTERVAL: ${TURN_INTERVAL:-10000}
-      DB_SYNC_INTERVAL: ${DB_SYNC_INTERVAL:-5000}
+      - NODE_ENV=development
     volumes:
       - ./open-sam-backend/src:/app/src:delegated
       - ./open-sam-backend/config:/app/config:ro
@@ -142,13 +129,10 @@ services:
     container_name: opensam-frontend-dev
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
+    env_file:
+      - .env
     environment:
-      NODE_ENV: development
-      # 클라이언트 브라우저용 (외부 접근)
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-      # 서버사이드 프록시용 (Docker 내부 네트워크)
-      BACKEND_URL: http://backend:8080
-      NEXT_PUBLIC_SESSION_ID: ${SESSION_ID:-default}
+      - NODE_ENV=development
     volumes:
       - ./open-sam-front/src:/app/src:delegated
       - ./open-sam-front/public:/app/public:delegated

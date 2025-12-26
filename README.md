@@ -47,55 +47,46 @@ cp env.example .env
 
 ### 2. `.env` 파일 수정
 
-`.env` 파일을 열어 다음 항목들을 수정합니다:
+`.env` 파일을 열어 다음 항목들을 수정합니다. 이제 하나의 파일로 시스템부터 게임 밸런스까지 통합 관리할 수 있습니다:
 
 ```env
-# ==========================================
-# 필수 변경 항목
-# ==========================================
-
-# MongoDB 비밀번호 (반드시 변경!)
-MONGO_PASSWORD=your_secure_password_here
-
-# Redis 비밀번호 (반드시 변경!)
-REDIS_PASSWORD=your_redis_password_here
-
-# JWT 시크릿 키 (반드시 변경!)
-# 생성 명령: openssl rand -hex 64
-JWT_SECRET=your_very_long_random_string_here
-JWT_REFRESH_SECRET=another_very_long_random_string_here
-
-# ==========================================
-# 서버 설정
-# ==========================================
-
-# 서버 이름 (게임 내 표시)
-SERVER_NAME=내 삼국지 서버
-
-# 세션 ID (여러 서버 운영 시 구분용)
-SESSION_ID=default
-
-# ==========================================
-# 접속 주소 설정
-# ==========================================
-
-# 프론트엔드 포트
-FRONTEND_PORT=3000
-
-# 백엔드 API 포트  
-BACKEND_PORT=8080
-
-# 프론트엔드 URL (외부 접속 주소)
-# 예: http://your-domain.com:3000 또는 http://공인IP:3000
+# [System] 기본 인프라 설정
+PORT=8080
+TZ=Asia/Seoul
 FRONTEND_URL=http://localhost:3000
 
-# 백엔드 API URL (프론트엔드에서 호출하는 주소)
-NEXT_PUBLIC_API_URL=http://localhost:8080
+# [Database] MongoDB 설정
+MONGODB_URI=mongodb://admin:your_secure_password@mongodb:27017/sangokushi?authSource=admin
+
+# [Security] 보안 및 인증 (반드시 고유한 키로 변경하세요!)
+JWT_SECRET=your_jwt_secret_key
+JWT_REFRESH_SECRET=your_refresh_secret_key
+
+# [Game Balance] 게임 규칙 조정
+GAME_TURN_TERM=60              # 턴 주기 (분)
+GAME_DEFAULT_GOLD=1000         # 초기 지금 금
+GAME_MAX_CREW=50000            # 최대 보유 병력
+
+# [NPC AI] AI 지능 및 난이도
+NPC_AI_MODE=full               # AI 활성화 (disabled, partial, full)
+AI_DIFFICULTY=normal           # 난이도 (easy, normal, hard, expert)
 ```
 
-> 💡 **팁**: `./setup.sh` 스크립트를 실행하면 대화형으로 설정할 수 있습니다.
+> 💡 **팁**: `env.example` 파일에 60개 이상의 설정 항목에 대한 상세한 한글 주석이 포함되어 있습니다. 필요에 따라 세부적으로 튜닝할 수 있습니다.
 
-> ⚠️ **중요**: 외부에서 접속하려면 `FRONTEND_URL`과 `NEXT_PUBLIC_API_URL`을 공인 IP 또는 도메인 주소로 변경해야 합니다.
+---
+
+## 설치 및 업데이트 스크립트
+
+OpenSAM은 편리한 관리를 위해 여러 헬퍼 스크립트를 제공합니다:
+
+| 스크립트 | 용도 | 사용법 |
+|----------|------|--------|
+| `install.sh` | 백엔드/프론트엔드 소스 자동 다운로드 | `./install.sh` |
+| `setup.sh` | 대화형 환경 변수 설정 | `./setup.sh` |
+| `update.sh` | 소스 업데이트 및 재빌드 | `./update.sh` |
+| `create-admin.sh` | 관리자 계정 생성 | `./create-admin.sh` |
+| `manage-session.sh` | 게임 세션(서버) 관리 메뉴 | `./manage-session.sh` |
 
 ---
 
